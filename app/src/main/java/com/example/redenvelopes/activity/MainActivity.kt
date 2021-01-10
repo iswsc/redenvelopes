@@ -39,6 +39,14 @@ class MainActivity : BaseActivity() {
                         )
 
                     }
+                    2 -> {
+                        startActivity(
+                            cIntent.setClass(
+                                this@MainActivity, HuaWeiEnvelopeActivity::class.java
+                            )
+                        )
+
+                    }
                 }
             }
 

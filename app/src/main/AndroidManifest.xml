@@ -27,6 +27,17 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/redenvelopes"/>
         </service>
+        <service android:name=".service.HuaWeiService" android:enabled="true"
+            android:exported="true"
+            android:label="@string/des_huawei"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/redenvelopes_huawei"/>
+        </service>
 
         <activity android:name=".activity.MainActivity">
             <intent-filter>
@@ -37,6 +48,7 @@
         </activity>
         <activity android:name=".activity.WechatEnvelopeActivity"/>
         <activity android:name=".activity.GithubIssuesActivity"/>
+        <activity android:name=".activity.HuaWeiEnvelopeActivity" />
     </application>
 
 </manifest>
