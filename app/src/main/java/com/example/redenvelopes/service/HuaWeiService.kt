@@ -11,13 +11,13 @@ import android.graphics.Path
 import android.os.Build
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.annotation.RequiresApi
-import com.example.redenvelopes.HuaWeiConstants
+import com.example.redenvelopes.HuaWeiConstants.HUAWEI_PRODUCT_DETAIL_ACTIVITY
 import com.example.redenvelopes.HuaWeiConstants.RED_ENVELOPE_ID
 import com.example.redenvelopes.HuaWeiConstants.RED_ENVELOPE_OPEN_ID
 import com.example.redenvelopes.HuaWeiConstants.RED_ENVELOPE_TITLE
 import com.example.redenvelopes.HuaWeiConstants.WECHAT_LUCKYMONEYDETAILUI_ACTIVITY
-import com.example.redenvelopes.HuaWeiConstants.WECHAT_LUCKYMONEY_ACTIVITY
 import com.example.redenvelopes.HuaWeiConstants.WECHAT_PACKAGE
 import com.example.redenvelopes.MyApplication
 import com.example.redenvelopes.R
@@ -26,7 +26,6 @@ import com.example.redenvelopes.data.RedEnvelopePreferences
 import com.example.redenvelopes.data.RedEnvelopePreferences.daleyTime
 import com.example.redenvelopes.utils.AccessibilityHelper
 import com.example.redenvelopes.utils.AccessibilityServiceUtils
-import com.example.redenvelopes.utils.AppUtils
 import com.example.redenvelopes.utils.WakeupTools
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -105,7 +104,16 @@ class HuaWeiService : AccessibilityService() {
                     return
                 Log.d(TAG, "内容改变")
                 monitorChat()
-                getAllIdName()
+                if (HUAWEI_PRODUCT_DETAIL_ACTIVITY != currentClassName) return
+
+                rootInActiveWindow?.let {
+                    for (i in 0 until it.childCount) {
+                        val child = it.getChild(i)
+                        getAllNodeName(child)
+
+                    }
+                }
+
 
             }
             AccessibilityEvent.TYPE_VIEW_CLICKED -> {
@@ -115,21 +123,38 @@ class HuaWeiService : AccessibilityService() {
                     return
                 }
 
-                getAllIdName()
+//                for (i in 0 until rootInActiveWindow.childCount) {
+//                    val child = rootInActiveWindow?.getChild(i)
+//                    getAllNodeName(child)
+//
+//                }
                 grabRedEnvelope()
 
             }
         }
     }
 
-    private fun getAllIdName() {
+    private fun getAllNodeName(child: AccessibilityNodeInfo?) {
         try {
-
-            for (i in 0 until rootInActiveWindow.childCount) {
-                val child = rootInActiveWindow.getChild(i)
-                Log.i("wsc", " text = ${child.text} id = ${child.viewIdResourceName}")
-
+            child?.let {
+                if (it.childCount > 0) {
+                    for (i in 0 until it.childCount) {
+                        getAllNodeName(child.getChild(i))
+                    }
+                } else {
+                    Log.i("wsc", " text = ${child.text} id = ${child.viewIdResourceName}")
+                    if (child.text.contains("抱歉，没有抢到")) {
+                        //没抢到 后退再抢
+                        performGlobalAction(GLOBAL_ACTION_BACK)
+                        return@let
+                    } else if ("immediatePay".equals(child.viewIdResourceName)) {
+                        //提交订单 抢到了
+                        AccessibilityHelper.performClick(child)
+                        return@let
+                    }
+                }
             }
+
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -180,15 +205,15 @@ class HuaWeiService : AccessibilityService() {
     private fun monitorChat() {
         Log.d(TAG, "monitorChat")
         if (!RedEnvelopePreferences.wechatControl.isMonitorChat) return
-        val lists = AccessibilityServiceUtils.getElementsByText(
-            "立即购买",
+        val lists = AccessibilityServiceUtils.getElementsById(
+            RED_ENVELOPE_ID,
             rootInActiveWindow
         ) ?: return
         Log.d(TAG, "lists" + lists.toString())
         for (envelope in lists) {
             Log.d(TAG, "文字--" + envelope.text)
             if (!envelope.text.isNullOrEmpty()) {
-                if (envelope.text.contains("立即购买")) {
+                if (envelope.text.contains("立即申购")) {
                     Log.d(TAG, "monitorChat:红包")
                     AccessibilityHelper.performClick(envelope)
                     isHasReceived = true
@@ -240,7 +265,7 @@ class HuaWeiService : AccessibilityService() {
      */
     @RequiresApi(Build.VERSION_CODES.N)
     private fun openRedEnvelope(event: AccessibilityEvent) {
-        if (event.className != WECHAT_LUCKYMONEY_ACTIVITY) return
+        if (event.className != HUAWEI_PRODUCT_DETAIL_ACTIVITY) return
         GlobalScope.launch {
 
             val delayTime = 100L + daleyTime//小米10测试数据
@@ -304,7 +329,7 @@ class HuaWeiService : AccessibilityService() {
     private fun openRedEnvelopeNew(event: AccessibilityEvent) {
         Log.d(TAG, "Build.VERSION.SDK_INT:" + Build.VERSION.SDK_INT)
         if (!isHasClicked) return
-        if (WECHAT_LUCKYMONEY_ACTIVITY != currentClassName) return
+        if (HUAWEI_PRODUCT_DETAIL_ACTIVITY != currentClassName) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             Log.d(TAG, "sdk:" + Build.VERSION.SDK_INT)
             val metrics = resources.displayMetrics
