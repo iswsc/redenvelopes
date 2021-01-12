@@ -28,10 +28,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="@dimen/text_size_small"
-                    android:text="微信红包监控开关："
+                    android:text="华为监控开关："
                     android:layout_centerHorizontal="true"/>
                 <CheckBox
-                    android:id="@+id/cb_qq_control"
+                    android:id="@+id/cb_huawei_control"
                     android:layout_width="60dp"
                     android:gravity="center"
                     android:layout_height="wrap_content"
@@ -54,27 +54,6 @@
                 android:gravity="center"
                 />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:orientation="horizontal"
-                android:gravity="center">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="@dimen/text_size_small"
-                    android:text="通知监控开关："
-                    android:layout_centerHorizontal="true"/>
-                <CheckBox
-                    android:id="@+id/cb_wechat_notification_control"
-                    android:layout_width="60dp"
-                    android:gravity="center"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="15dp"
-                    android:checked="true"
-                    android:button="@drawable/switch_course_control"/>
-            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -86,10 +65,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="@dimen/text_size_small"
-                    android:text="聊天列表页监控开关："
+                    android:text="关闭监控："
                     android:layout_centerHorizontal="true"/>
                 <CheckBox
-                    android:id="@+id/cb_wechat_chat_control"
+                    android:id="@+id/mHuaWeiControlCb"
                     android:layout_width="60dp"
                     android:gravity="center"
                     android:layout_height="wrap_content"
@@ -101,48 +80,6 @@
                 android:layout_marginTop="10dp"
                 android:layout_marginBottom="10dp"
                 style="@style/view_line"/>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:layout_marginBottom="10dp"
-                    android:textSize="@dimen/text_size_small"
-                    android:text="wx防封号延迟抢红包设置"
-                    />
-                <TextView
-                    android:id="@+id/tv_qq_putong"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:textSize="@dimen/text_size_small"
-                    android:text="打开红包延迟时间："
-                    />
-
-                <SeekBar
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:id="@+id/sb_qq_putong"
-                    android:layout_marginTop="10dp"
-                    android:max="10"/>
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:textSize="@dimen/text_size_small"
-                    android:text="开的延迟时间(经测试小米10是100ms就可以)："
-                    />
-                <EditText
-                    android:id="@+id/et_time"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:hint="100"/>
-            </LinearLayout>
 
         </LinearLayout>
     </ScrollView>

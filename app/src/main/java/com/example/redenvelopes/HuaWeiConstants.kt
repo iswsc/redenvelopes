@@ -6,8 +6,8 @@ object HuaWeiConstants {
     val WECHAT_PACKAGE = "com.vmall.client"
     val HUAWEI_PRODUCT_DETAIL_ACTIVITY =
         "$WECHAT_PACKAGE.product.fragment.ProductDetailActivity" //华为产品详情页面
-    val WECHAT_LUCKYMONEYDETAILUI_ACTIVITY =
-        "$WECHAT_PACKAGE.plugin.luckymoney.ui.LuckyMoneyDetailUI" //微信红包详情页
+    val HUAWEI_SUBMIT_ORDER_ACTIVITY =
+        "$WECHAT_PACKAGE.base.fragment.SinglePageActivity" //提交订单页面
 
 
     var RED_ENVELOPE_ID = "com.vmall.client:id/buy_single" //确定购买按钮
