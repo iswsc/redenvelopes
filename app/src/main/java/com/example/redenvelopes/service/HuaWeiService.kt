@@ -26,7 +26,7 @@ import com.example.redenvelopes.utils.WakeupTools
 
 
 class HuaWeiService : AccessibilityService() {
-    private val TAG = "========"
+    private val TAG = "wsc"
     private var isHasReceived: Boolean = false//true已经通知或聊天列表页面收到红包
     private var isHasClicked: Boolean = false//true点击红包弹出红包框
     private var isHasOpened: Boolean = false//true点击了拆开红包按钮
@@ -79,6 +79,7 @@ class HuaWeiService : AccessibilityService() {
             if (event.className.toString().startsWith(WECHAT_PACKAGE)) {
                 currentClassName = event.className.toString()
             }
+            Log.i("wsc", "currentClassName = $currentClassName")
 
             when (event.eventType) {
                 AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED -> {
@@ -86,6 +87,7 @@ class HuaWeiService : AccessibilityService() {
                 }
                 AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                     Log.d(TAG, "界面改变$event")
+                    monitorBuy()
                 }
                 AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> {
                     if (rootInActiveWindow == null)
@@ -101,19 +103,17 @@ class HuaWeiService : AccessibilityService() {
 
                         }
                     }
-
-
                 }
-                AccessibilityEvent.TYPE_VIEW_CLICKED -> {
-                    Log.d(TAG, "点击")
-                    getClickContent(event)
-                    if (rootInActiveWindow == null) {
-                        return
-                    }
-
-                    grabRedEnvelope()
-
-                }
+//                AccessibilityEvent.TYPE_VIEW_CLICKED -> {
+//                    Log.d(TAG, "点击")
+//                    getClickContent(event)
+//                    if (rootInActiveWindow == null) {
+//                        return
+//                    }
+//
+//                    grabRedEnvelope()
+//
+//                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -129,13 +129,18 @@ class HuaWeiService : AccessibilityService() {
                     }
                 } else {
                     Log.i("wsc", " text = ${child.text} id = ${child.viewIdResourceName}")
-                    if (child.text.contains("抱歉，没有抢到")) {
+                    if (child.text?.contains("抱歉，没有抢到") == true) {
                         //没抢到 后退再抢
                         performGlobalAction(GLOBAL_ACTION_BACK)
+                        isHasReceived = false
                         return@let
                     } else if ("immediatePay".equals(child.viewIdResourceName)) {
                         //提交订单 抢到了
                         AccessibilityHelper.performClick(child)
+                        return@let
+                    }else if("com.vmall.client:id/act_in".equals(child.viewIdResourceName)){
+                        Log.i("wsc", " 不遍历这个页面")
+
                         return@let
                     }
                 }
@@ -161,7 +166,7 @@ class HuaWeiService : AccessibilityService() {
      * 监控微信聊天列表页面是否有红包，经测试若聊天页面与通知同时开启聊天页面快
      */
     private fun monitorBuy() {
-        Log.d(TAG, "monitorChat")
+        Log.d(TAG, "monitorBuy")
         val lists = AccessibilityServiceUtils.getElementsById(
             RED_ENVELOPE_ID,
             rootInActiveWindow
@@ -171,7 +176,7 @@ class HuaWeiService : AccessibilityService() {
             Log.d(TAG, "文字--" + envelope.text)
             if (!envelope.text.isNullOrEmpty()) {
                 if (envelope.text.contains("立即申购")) {
-                    Log.d(TAG, "monitorChat:红包")
+                    Log.d(TAG, "monitorBuy:立即申购")
                     AccessibilityHelper.performClick(envelope)
                     isHasReceived = true
                 }
