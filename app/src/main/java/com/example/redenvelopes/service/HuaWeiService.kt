@@ -11,18 +11,16 @@ import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.annotation.RequiresApi
-import com.example.redenvelopes.HuaWeiConstants.HUAWEI_PRODUCT_DETAIL_ACTIVITY
 import com.example.redenvelopes.HuaWeiConstants.HUAWEI_SUBMIT_ORDER_ACTIVITY
 import com.example.redenvelopes.HuaWeiConstants.RED_ENVELOPE_ID
-import com.example.redenvelopes.HuaWeiConstants.RED_ENVELOPE_TITLE
 import com.example.redenvelopes.HuaWeiConstants.WECHAT_PACKAGE
 import com.example.redenvelopes.MyApplication
 import com.example.redenvelopes.R
 import com.example.redenvelopes.activity.MainActivity
-import com.example.redenvelopes.data.RedEnvelopePreferences
 import com.example.redenvelopes.utils.AccessibilityHelper
 import com.example.redenvelopes.utils.AccessibilityServiceUtils
-import com.example.redenvelopes.utils.WakeupTools
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 
 class HuaWeiService : AccessibilityService() {
@@ -86,34 +84,42 @@ class HuaWeiService : AccessibilityService() {
                     Log.d(TAG, "通知改变" + event.text)
                 }
                 AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
-                    Log.d(TAG, "界面改变$event")
+                    Log.d(TAG, "界面改变${event.className}")
                     monitorBuy()
                 }
                 AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> {
                     if (rootInActiveWindow == null)
                         return
                     Log.d(TAG, "内容改变")
-                    monitorBuy()
                     if (HUAWEI_SUBMIT_ORDER_ACTIVITY != currentClassName) return
-                    //遍历h5页面
-                    rootInActiveWindow?.let {
-                        for (i in 0 until it.childCount) {
-                            val child = it.getChild(i)
-                            getAllNodeName(child)
 
+                    GlobalScope.launch {
+                        val a = System.currentTimeMillis()
+                        monitorBuy()
+                        //遍历h5页面
+                        rootInActiveWindow?.let {
+                            for (i in 0 until it.childCount) {
+                                val child = it.getChild(i)
+                                getAllNodeName(child)
+
+                            }
                         }
+                        Log.i("wsc","total time = ${System.currentTimeMillis() - a}")
                     }
+
                 }
-//                AccessibilityEvent.TYPE_VIEW_CLICKED -> {
-//                    Log.d(TAG, "点击")
-//                    getClickContent(event)
-//                    if (rootInActiveWindow == null) {
-//                        return
-//                    }
-//
-//                    grabRedEnvelope()
-//
-//                }
+                AccessibilityEvent.TYPE_VIEW_CLICKED -> {
+                    Log.d(TAG, "点击")
+                    getClickContent(event)
+                    if (rootInActiveWindow == null) {
+                        return
+                    }
+                    GlobalScope.launch {
+
+                        grabRedEnvelope()
+                    }
+
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -138,7 +144,7 @@ class HuaWeiService : AccessibilityService() {
                         //提交订单 抢到了
                         AccessibilityHelper.performClick(child)
                         return@let
-                    }else if("com.vmall.client:id/act_in".equals(child.viewIdResourceName)){
+                    }else if("com.vmall.client:id/act_in" == child.viewIdResourceName){
                         Log.i("wsc", " 不遍历这个页面")
 
                         return@let
