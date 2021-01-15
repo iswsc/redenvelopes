@@ -11,14 +11,13 @@ import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.annotation.RequiresApi
-import com.example.redenvelopes.HuaWeiConstants.HUAWEI_SUBMIT_ORDER_ACTIVITY
-import com.example.redenvelopes.HuaWeiConstants.RED_ENVELOPE_ID
-import com.example.redenvelopes.HuaWeiConstants.WECHAT_PACKAGE
+import com.example.redenvelopes.HuaWeiConstants
 import com.example.redenvelopes.MyApplication
 import com.example.redenvelopes.R
 import com.example.redenvelopes.activity.MainActivity
 import com.example.redenvelopes.utils.AccessibilityHelper
 import com.example.redenvelopes.utils.AccessibilityServiceUtils
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
@@ -73,11 +72,11 @@ class HuaWeiService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
 
         try {
-            if (WECHAT_PACKAGE != event.packageName) return
-            if (event.className.toString().startsWith(WECHAT_PACKAGE)) {
+            if (HuaWeiConstants.HUAWEI_PACKAGE != event.packageName) return
+            if (event.className.toString().startsWith(HuaWeiConstants.HUAWEI_PACKAGE)) {
                 currentClassName = event.className.toString()
             }
-            Log.i("wsc", "currentClassName = $currentClassName")
+//            Log.i("wsc", "currentClassName = $currentClassName")
 
             when (event.eventType) {
                 AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED -> {
@@ -86,38 +85,40 @@ class HuaWeiService : AccessibilityService() {
                 AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                     Log.d(TAG, "界面改变${event.className}")
                     monitorBuy()
+//                    monitorSettingNotify()
+                    monitorOrderPage()
                 }
                 AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> {
                     if (rootInActiveWindow == null)
                         return
-                    Log.d(TAG, "内容改变")
-                    if (HUAWEI_SUBMIT_ORDER_ACTIVITY != currentClassName) return
+//                    Log.d(TAG, "内容改变")
+//                    if (HUAWEI_SUBMIT_ORDER_ACTIVITY != currentClassName) return
 
-                    GlobalScope.launch {
-                        val a = System.currentTimeMillis()
-                        monitorBuy()
-                        //遍历h5页面
-                        rootInActiveWindow?.let {
-                            for (i in 0 until it.childCount) {
-                                val child = it.getChild(i)
-                                getAllNodeName(child)
-
-                            }
-                        }
-                        Log.i("wsc","total time = ${System.currentTimeMillis() - a}")
-                    }
+//                    GlobalScope.launch {
+//                        val a = System.currentTimeMillis()
+//                        monitorBuy()
+//                        //遍历h5页面
+//                        rootInActiveWindow?.let {
+//                            for (i in 0 until it.childCount) {
+//                                val child = it.getChild(i)
+//                                getAllNodeName(child)
+//
+//                            }
+//                        }
+//                        Log.i("wsc","total time = ${System.currentTimeMillis() - a}")
+//                    }
 
                 }
                 AccessibilityEvent.TYPE_VIEW_CLICKED -> {
                     Log.d(TAG, "点击")
-                    getClickContent(event)
-                    if (rootInActiveWindow == null) {
-                        return
-                    }
-                    GlobalScope.launch {
-
-                        grabRedEnvelope()
-                    }
+//                    getClickContent(event)
+//                    if (rootInActiveWindow == null) {
+//                        return
+//                    }
+//                    GlobalScope.launch {
+//
+//                        grabRedEnvelope()
+//                    }
 
                 }
             }
@@ -126,28 +127,54 @@ class HuaWeiService : AccessibilityService() {
         }
     }
 
-    private fun getAllNodeName(child: AccessibilityNodeInfo?) {
+    private fun monitorOrderPage() {
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                while (true) {
+                    if (HuaWeiConstants.HUAWEI_SUBMIT_ORDER_ACTIVITY != currentClassName) return@launch
+
+                    var result = false
+                    rootInActiveWindow?.let {
+                        for (i in 0 until it.childCount) {
+                            val child = it.getChild(i)
+                            result = getAllNodeName(child)
+                            if (HuaWeiConstants.HUAWEI_SUBMIT_ORDER_ACTIVITY != currentClassName) {
+                                return@launch
+                            }
+                            if (result) {
+                                return@launch
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun getAllNodeName(child: AccessibilityNodeInfo?): Boolean {
         try {
             child?.let {
                 if (it.childCount > 0) {
                     for (i in 0 until it.childCount) {
-                        getAllNodeName(child.getChild(i))
+                        val result = getAllNodeName(child.getChild(i))
+                        if (result) {
+                            return true
+                        }
                     }
                 } else {
-                    Log.i("wsc", " text = ${child.text} id = ${child.viewIdResourceName}")
+                    Log.i(TAG, " text = ${child.text} id = ${child.viewIdResourceName}")
                     if (child.text?.contains("抱歉，没有抢到") == true) {
                         //没抢到 后退再抢
                         performGlobalAction(GLOBAL_ACTION_BACK)
                         isHasReceived = false
-                        return@let
-                    } else if ("immediatePay".equals(child.viewIdResourceName)) {
+                        return true
+                    } else if ("immediatePay" == child.viewIdResourceName) {
                         //提交订单 抢到了
                         AccessibilityHelper.performClick(child)
-                        return@let
-                    }else if("com.vmall.client:id/act_in" == child.viewIdResourceName){
-                        Log.i("wsc", " 不遍历这个页面")
-
-                        return@let
+                        Log.i(TAG, " 找到提交订单按钮了")
+                        return true
                     }
                 }
             }
@@ -155,6 +182,7 @@ class HuaWeiService : AccessibilityService() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+        return false
     }
 
     private fun getClickContent(event: AccessibilityEvent) {
@@ -169,26 +197,56 @@ class HuaWeiService : AccessibilityService() {
     }
 
     /**
-     * 监控微信聊天列表页面是否有红包，经测试若聊天页面与通知同时开启聊天页面快
+     * 监控立即申购页面
      */
     private fun monitorBuy() {
+        if (HuaWeiConstants.HUAWEI_PRODUCT_DETAIL_ACTIVITY != currentClassName) return
         Log.d(TAG, "monitorBuy")
-        val lists = AccessibilityServiceUtils.getElementsById(
-            RED_ENVELOPE_ID,
-            rootInActiveWindow
-        ) ?: return
-        Log.d(TAG, "lists" + lists.toString())
-        for (envelope in lists) {
-            Log.d(TAG, "文字--" + envelope.text)
-            if (!envelope.text.isNullOrEmpty()) {
-                if (envelope.text.contains("立即申购")) {
-                    Log.d(TAG, "monitorBuy:立即申购")
+        GlobalScope.launch(Dispatchers.IO) {
+            while (true) {
+                if (HuaWeiConstants.HUAWEI_PRODUCT_DETAIL_ACTIVITY != currentClassName) return@launch
+
+                val lists = AccessibilityServiceUtils.getElementsById(
+                    HuaWeiConstants.HUAWEI_SINGLE_BUY,
+                    rootInActiveWindow
+                ) ?: return@launch
+                Log.d(TAG, "lists = " + lists.size)
+                for (envelope in lists) {
+                    Log.d(TAG, "文字--${envelope.text} enable = ${envelope.isEnabled}")
                     AccessibilityHelper.performClick(envelope)
+                    Log.i(TAG, "点击 ${envelope.text}")
                     isHasReceived = true
+                    if(envelope.isEnabled){
+                        return@launch
+                    }
                 }
             }
         }
+    }
 
+    /**
+     * 监控立即申购页面
+     */
+    private fun monitorSettingNotify() {
+        if (HuaWeiConstants.HUAWEI_PRODUCT_DETAIL_ACTIVITY != currentClassName) return
+        Log.d(TAG, "monitorSettingNotify")
+        GlobalScope.launch(Dispatchers.IO) {
+            while (true) {
+                if (HuaWeiConstants.HUAWEI_PRODUCT_DETAIL_ACTIVITY != currentClassName) return@launch
+
+                val lists = AccessibilityServiceUtils.getElementsById(
+                    HuaWeiConstants.HUAWEI_SETTING_NOTIFY,
+                    rootInActiveWindow
+                ) ?: return@launch
+                Log.d(TAG, "lists = " + lists.size)
+                for (envelope in lists) {
+                    Log.d(TAG, "文字--${envelope.text} enable = ${envelope.isEnabled}")
+                    AccessibilityHelper.performClick(envelope)
+                    isHasReceived = true
+                    return@launch
+                }
+            }
+        }
     }
 
     /**
@@ -198,7 +256,7 @@ class HuaWeiService : AccessibilityService() {
         Log.d(TAG, "grabRedEnvelope")
 
         val envelopes = AccessibilityServiceUtils.getElementsById(
-            RED_ENVELOPE_ID,
+            HuaWeiConstants.HUAWEI_SINGLE_BUY,
             rootInActiveWindow
         ) ?: return
 
