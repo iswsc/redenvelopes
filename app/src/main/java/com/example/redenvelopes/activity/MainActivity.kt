@@ -47,6 +47,14 @@ class MainActivity : BaseActivity() {
                         )
 
                     }
+                    3 -> {
+                        startActivity(
+                            cIntent.setClass(
+                                this@MainActivity, TaobaoEnvelopeActivity::class.java
+                            )
+                        )
+
+                    }
                 }
             }
 

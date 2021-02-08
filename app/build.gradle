@@ -7,7 +7,7 @@ apply plugin: 'kotlinx-serialization'
 android {
     compileSdkVersion 29
     defaultConfig {
-        applicationId "com.example.redenvelopes"
+        applicationId "com.example.mytext"
         minSdkVersion 21
         targetSdkVersion 29
         versionCode 108

@@ -38,6 +38,17 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/redenvelopes_huawei"/>
         </service>
+        <service android:name=".service.TaobaoService" android:enabled="true"
+            android:exported="true"
+            android:label="@string/des_taobao"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/redenvelopes_taobao"/>
+        </service>
 
         <activity android:name=".activity.MainActivity">
             <intent-filter>
@@ -49,6 +60,7 @@
         <activity android:name=".activity.WechatEnvelopeActivity"/>
         <activity android:name=".activity.GithubIssuesActivity"/>
         <activity android:name=".activity.HuaWeiEnvelopeActivity" />
+        <activity android:name=".activity.TaobaoEnvelopeActivity" />
     </application>
 
 </manifest>
